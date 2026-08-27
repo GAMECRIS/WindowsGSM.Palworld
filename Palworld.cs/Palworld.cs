@@ -85,20 +85,19 @@ namespace WindowsGSM.Plugins
                     WorkingDirectory = ServerPath.GetServersServerFiles(_serverData.ServerID),
                     FileName = shipExePath,
                     Arguments = param.ToString(),
-                    WindowStyle = ProcessWindowStyle.Hidden,
+                    // Keep a real console window so WindowsGSM can obtain and later toggle
+                    // the MainWindowHandle. WindowsGSM will hide it after startup.
+                    WindowStyle = ProcessWindowStyle.Minimized,
                     UseShellExecute = false
 
                 },
                 EnableRaisingEvents = true
             };
 
-            // Palworld may not expose a usable MainWindowHandle on newer server builds.
-            // Always run without a window so WindowsGSM does not remain stuck in "Starting".
-            p.StartInfo.CreateNoWindow = true;
-
             // Set up Redirect Input and Output to WindowsGSM Console if EmbedConsole is on
             if (AllowsEmbedConsole)
             {
+                p.StartInfo.CreateNoWindow = true;
                 p.StartInfo.RedirectStandardInput = true;
                 p.StartInfo.RedirectStandardOutput = true;
                 p.StartInfo.RedirectStandardError = true;
@@ -115,6 +114,33 @@ namespace WindowsGSM.Plugins
                 {
                     p.BeginOutputReadLine();
                     p.BeginErrorReadLine();
+                }
+                else
+                {
+                    // Process.MainWindowHandle is cached. Refresh it while Palworld creates
+                    // its console window so WindowsGSM does not enter its startup wait loop
+                    // with a stale zero handle.
+                    for (int i = 0; i < 100 && !p.HasExited; i++)
+                    {
+                        p.Refresh();
+                        if (p.MainWindowHandle != IntPtr.Zero)
+                        {
+                            break;
+                        }
+
+                        await Task.Delay(100);
+                    }
+
+                    p.Refresh();
+
+                    // Some environments may genuinely provide no usable window. In that
+                    // case, tell WindowsGSM to skip window handling instead of hanging in
+                    // "Starting". Toggle Console is unavailable only for that session.
+                    if (!p.HasExited && p.MainWindowHandle == IntPtr.Zero)
+                    {
+                        p.StartInfo.CreateNoWindow = true;
+                        Notice = "Palworld started without a usable console window. Toggle Console is unavailable for this session.";
+                    }
                 }
 
                 return p;
