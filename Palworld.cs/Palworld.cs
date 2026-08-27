@@ -92,10 +92,13 @@ namespace WindowsGSM.Plugins
                 EnableRaisingEvents = true
             };
 
+            // Palworld may not expose a usable MainWindowHandle on newer server builds.
+            // Always run without a window so WindowsGSM does not remain stuck in "Starting".
+            p.StartInfo.CreateNoWindow = true;
+
             // Set up Redirect Input and Output to WindowsGSM Console if EmbedConsole is on
             if (AllowsEmbedConsole)
             {
-                p.StartInfo.CreateNoWindow = true;
                 p.StartInfo.RedirectStandardInput = true;
                 p.StartInfo.RedirectStandardOutput = true;
                 p.StartInfo.RedirectStandardError = true;
