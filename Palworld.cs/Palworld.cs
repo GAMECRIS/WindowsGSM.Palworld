@@ -69,11 +69,7 @@ namespace WindowsGSM.Plugins
             }
 
             string param = $" {_serverData.ServerParam} ";
-			param += $"-publicip=\"{_serverData.ServerIP}\" ";
             param += $"-port={_serverData.ServerPort} ";
-            param += $"-publicport={_serverData.ServerPort} ";
-            param += $"-queryport={_serverData.ServerQueryPort} ";
-			param += $"-publicqueryport={_serverData.ServerQueryPort} ";
             param += $"-players={_serverData.ServerMaxPlayer} ";
             param += $"-servername=\"\"\"{_serverData.ServerName}\"\"\"";
 
